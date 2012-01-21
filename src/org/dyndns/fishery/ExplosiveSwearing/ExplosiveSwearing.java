@@ -1,5 +1,6 @@
 package org.dyndns.fishery.ExplosiveSwearing;
 import java.io.File;
+import java.io.IOException;
 import java.util.logging.Logger;
 
 import org.bukkit.plugin.PluginManager;
@@ -12,10 +13,20 @@ public class ExplosiveSwearing extends JavaPlugin {
 
 	public void onEnable(){
 		log.info("[ExplosiveSwearing]: Enabled");
-		
-		if(!(new File(this.getDataFolder(), "config.yml").exists())){
-			this.getConfig().options().copyDefaults(true);
+		File cfgfile = new File(this.getDataFolder(), "config.yml");
+		if(!(this.getDataFolder().exists())){
+			this.getDataFolder().mkdirs();
 		}
+		if(!(cfgfile.exists() || this.getDataFolder().canWrite())){
+			try{
+				cfgfile.createNewFile();
+				this.getConfig().options().copyDefaults(true);
+			} catch(IOException e){
+				log.warning(e.toString());
+			}			
+		}
+		
+//		}
 		PluginManager pm = this.getServer().getPluginManager();
 		pm.registerEvents(listener, this);
 		pm.registerEvents(listener, this);

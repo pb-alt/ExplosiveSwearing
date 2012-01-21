@@ -58,7 +58,7 @@ public class ExplosiveSwearingListener implements Listener {
 		 }
 		 if(this.curser.equals(player.getName())){
 			 ((PlayerDeathEvent) event).setDeathMessage(null);
-			 plugin.getServer().broadcastMessage(player.getName() + " blew up");
+			 plugin.getServer().broadcastMessage(player.getName() + " swore explosively");
 			 this.curser = "";
 		 }
 	}
