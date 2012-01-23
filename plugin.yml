@@ -1,3 +1,8 @@
 name: ExplosiveSwearing
 main: org.dyndns.fishery.ExplosiveSwearing.ExplosiveSwearing
 version: 0.1
+commands:
+    exswear:
+        description: All commands for ExplosiveSwearing
+        permission: ExplosiveSwearing.reload
+        usage: /exswear reload - Reload the plugin
