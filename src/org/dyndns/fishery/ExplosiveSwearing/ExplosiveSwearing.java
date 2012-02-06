@@ -16,7 +16,8 @@ public class ExplosiveSwearing extends JavaPlugin {
 	private ExplosiveSwearingWorldGuard wg = new ExplosiveSwearingWorldGuard(this);
 	private final ExplosiveSwearingListener listener = new ExplosiveSwearingListener(this, wg);
 	public boolean explodable = true;
-	public boolean censor = false;
+	public boolean censor = true;
+	public boolean opPerms = false;
 
 	
 	public void onEnable(){
@@ -30,6 +31,10 @@ public class ExplosiveSwearing extends JavaPlugin {
 		}
 		PluginManager pm = this.getServer().getPluginManager();
 		pm.registerEvents(listener, this);
+		opPerms = (pm.getPlugin("PermissionsBukkit") == null && pm.getPlugin("bPermissions") == null && pm.getPlugin("PermissionsEx") == null);
+		if(opPerms){
+			log.info("[ExplosiveSwearing] No permissions detected. Defaulting to op");
+		}
 //		pm.registerEvents(listener, this);
 		log.info("[ExplosiveSwearing] Enabled");
 	}
@@ -49,7 +54,7 @@ public class ExplosiveSwearing extends JavaPlugin {
 				if(sender instanceof Player){
 					sendp = (Player) sender;
 				}
-				if(!(sender instanceof ConsoleCommandSender || sendp.isOp() || sendp.hasPermission("ExplosiveSwearing.reload"))){
+				if(!(sender instanceof ConsoleCommandSender || hasPerm(sendp, "explosiveswearing.reload"))){
 					sendp.sendMessage(ChatColor.RED + "You do not have permission to reload this plugin");
 					return true;
 				}
@@ -76,5 +81,8 @@ public class ExplosiveSwearing extends JavaPlugin {
 	private void loadCfgVars(){
 		explodable = this.getConfig().getBoolean("explode");
 		censor = this.getConfig().getBoolean("censor");
+	}
+	public boolean hasPerm(Player player, String perm){
+		return (opPerms && player.isOp()) || (player.isPermissionSet(perm) && player.hasPermission(perm));
 	}
 }
