@@ -1,5 +1,14 @@
 explode: true
 censor: false
+kill: true
+chances:
+    explode: 1
+    lightning: 1
+    suffocate: 1
+    void: 1
+    sky: 1
+    incinerate: 1
+    starve: 1
 curses:
  - anus
  - arse

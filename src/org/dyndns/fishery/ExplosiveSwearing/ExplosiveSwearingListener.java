@@ -1,9 +1,10 @@
 package org.dyndns.fishery.ExplosiveSwearing;
 
-//import org.bukkit.GameMode;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
-import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -17,11 +18,15 @@ import org.bukkit.event.Listener;
 public class ExplosiveSwearingListener implements Listener {
 	public static ExplosiveSwearing plugin;
 	public static ExplosiveSwearingWorldGuard wg;
-	private String curser = "";
+	public static Punishments punishments;
+	private Map<String, String> curser = new HashMap<String, String>();
+	private Random rng;
 	
 	public ExplosiveSwearingListener(ExplosiveSwearing instance, ExplosiveSwearingWorldGuard wgi){
 		plugin = instance;
 		wg = wgi;
+		punishments = new Punishments(wg);
+		rng = new Random();
 	}
 	@EventHandler(priority=EventPriority.HIGH)
 	public void onPlayerChat(PlayerChatEvent event){
@@ -33,21 +38,31 @@ public class ExplosiveSwearingListener implements Listener {
 		String[] messaga = message.split(" ");
 		String[] ma2 = new String[messaga.length];
 		boolean hasSworn = false;
-		List<Object> swears = plugin.getConfig().getList("curses");
+		List<String> swears = plugin.getConfig().getStringList("curses");
 		int j = 0;
 		for(String i : messaga){
-			String lastchar = i.substring(i.length()-1, i.length());
 			String tmd = new String(i);
+			char lastchar = i.charAt(i.length()-1);
+			String t2 = "";
 
-			if(lastchar.equals(".") || lastchar.equals("!") || lastchar.equals("?") || lastchar.equals(",")){
-				tmd = i.substring(0, i.length() - 1);
+			while(lastchar == '.' || lastchar == '!' || lastchar == '?' || lastchar == ','){
+				tmd = tmd.substring(0, tmd.length() - 1);
+				t2 = Character.toString(lastchar) + t2;
+				if(tmd.length() == 0){
+					break;
+				}
+				lastchar = tmd.charAt(tmd.length()-1);
 			}
-			if(swears.contains((Object)(tmd.toLowerCase()))){
+			tmd = removePunctuation(tmd);
+			if(swears.contains(tmd.toLowerCase())){
 				if(hasSworn == false && !(plugin.hasPerm(player, "explosiveswearing.exempt"))){
-					goBoom(player);
+					randomlyPunish(player);
+//					if(plugin.kill){
+//						player.setHealth(0);
+//					}
 					hasSworn = true;
 				}
-				ma2[j] = getCensored(i);
+				ma2[j] = getCensored(tmd) + t2;
 			}else{
 				ma2[j] = i;
 			}
@@ -60,6 +75,10 @@ public class ExplosiveSwearingListener implements Listener {
 		}
 	}
 	
+	private void setCurser(String player, String message){
+		curser.put(player, message);
+	}
+	
 	@EventHandler(priority=EventPriority.HIGH)
 	public void onEntityDeath(EntityDeathEvent event){
 		Player player;
@@ -67,24 +86,14 @@ public class ExplosiveSwearingListener implements Listener {
 			 return;
 		 }
 		 player = (Player)event.getEntity();
-		 if(this.curser.equals(player.getName())){
-			 ((PlayerDeathEvent) event).setDeathMessage(player.getName() + " swore explosively");
-			 this.curser = "";
+		 String dm = curser.get(player.getName());
+		 if(dm != null){
+			 ((PlayerDeathEvent) event).setDeathMessage(player.getName() + " " + dm);
+			 curser.remove(player.getName());
 		 }
 	}
-	private void goBoom(Player player){
-		int explosionPower = 0;
-		if(plugin.getConfig().getBoolean("explode")){
-			Location loc = player.getLocation();
-			Location p1 = loc.clone().subtract(3, 3, 3);
-			Location p2 = loc.clone().add(3, 3, 3);
-			explosionPower = wg.canBuildWG(p1, p2, player) ? 4 : 0;
-		}
-		this.curser = player.getName();
-		player.sendMessage("BOOM!");
-		player.getWorld().createExplosion(player.getLocation(), explosionPower);
-		player.setHealth(0);
-	}
+
+	
     private String getCensored(String inp){
         String torepeat = "#!$%";
         String out = "";
@@ -101,5 +110,46 @@ public class ExplosiveSwearingListener implements Listener {
         	o += glue + array[i];
         }
         return o;
+    }
+    
+    private String removePunctuation(String inp){
+    	inp = inp.replaceAll("[!#%^&*(),./\\\\?_\\-|\\[\\]{}]", "");
+    	inp = inp.replaceAll("@", "a");
+    	inp = inp.replaceAll("\\$", "s");
+    	return inp;
+    }
+    private void randomlyPunish(Player player){
+    	double random = rng.nextDouble();
+    	double c = 0;
+    	if(random < (c += plugin.chances.explode)){
+			if(plugin.explodable){
+				setCurser(player.getName(), "swore explosively");
+			}
+			punishments.goBoom(player, plugin.explodable);
+    	}else if(random < (c += plugin.chances.lightning)){
+    		if(plugin.kill){
+    			setCurser(player.getName(), "was struck down");
+    		}
+    		punishments.lightning(player);
+    		if(plugin.kill){
+    			player.setHealth(0);
+    		}
+    	}else if(random < (c += plugin.chances.suffocate)){
+    		punishments.suffocate(player);
+    	}else if(random < (c += plugin.chances.voiddrop)){
+    		if(plugin.kill){
+    			setCurser(player.getName(), "was voided");
+    		}
+    		punishments.voidDrop(player);
+    		if(plugin.kill){
+    			player.setHealth(0);
+    		}
+    	}else if(random < (c += plugin.chances.sky)){
+    		punishments.skyDrop(player);
+    	}else if(random < (c += plugin.chances.incinerate)){
+    		punishments.incinerate(player);
+    	}else if(random < (c += plugin.chances.starve)){
+    		punishments.starve(player);
+    	}
     }
 }

@@ -6,6 +6,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -16,8 +17,10 @@ public class ExplosiveSwearing extends JavaPlugin {
 	private ExplosiveSwearingWorldGuard wg = new ExplosiveSwearingWorldGuard(this);
 	private final ExplosiveSwearingListener listener = new ExplosiveSwearingListener(this, wg);
 	public boolean explodable = true;
-	public boolean censor = true;
+	public boolean censor = false;
 	public boolean opPerms = false;
+	public boolean kill = true;
+	public Chances chances = new Chances();
 
 	
 	public void onEnable(){
@@ -79,10 +82,40 @@ public class ExplosiveSwearing extends JavaPlugin {
 	}
 	
 	private void loadCfgVars(){
-		explodable = this.getConfig().getBoolean("explode");
-		censor = this.getConfig().getBoolean("censor");
+		FileConfiguration cfg = this.getConfig();
+		explodable = cfg.getBoolean("explode");
+		censor = cfg.getBoolean("censor");
+		kill = cfg.getBoolean("kill");
+		double explode = cfg.getDouble("chances.explode");
+		double lightning = cfg.getDouble("chances.lightning");
+		double suffocate = cfg.getDouble("chances.suffocate");
+		double voiddrop = cfg.getDouble("chances.void");
+		double sky = cfg.getDouble("chances.sky");
+		double incinerate = cfg.getDouble("chances.incinerate");
+		double starve = cfg.getDouble("chances.starve");
+		double total = explode + lightning + suffocate + voiddrop + sky+ incinerate + starve;
+		chances.explode = explode / total;
+		chances.lightning = lightning / total;
+		chances.suffocate = suffocate / total;
+		chances.voiddrop = voiddrop / total;
+		chances.sky = sky / total;
+		chances.incinerate = incinerate / total;
+		chances.starve = starve / total;
 	}
 	public boolean hasPerm(Player player, String perm){
 		return (opPerms && player.isOp()) || (player.isPermissionSet(perm) && player.hasPermission(perm));
+	}
+}
+
+class Chances{
+	public double explode = 0;
+	public double lightning = 0;
+	public double suffocate = 0;
+	public double voiddrop = 0;
+	public double sky = 0;
+	public double incinerate = 0;
+	public double starve = 0;
+	public Chances(){
+		
 	}
 }
