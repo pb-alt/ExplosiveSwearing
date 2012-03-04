@@ -1,10 +1,11 @@
 package org.dyndns.fishery.ExplosiveSwearing;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.regex.Matcher;
 
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -22,11 +23,10 @@ public class ExplosiveSwearingListener implements Listener {
 	private Map<String, String> curser = new HashMap<String, String>();
 	private Random rng;
 	
-	public ExplosiveSwearingListener(ExplosiveSwearing instance, ExplosiveSwearingWorldGuard wgi){
+	public ExplosiveSwearingListener(ExplosiveSwearing instance, Punishments pi){
 		plugin = instance;
-		wg = wgi;
-		punishments = new Punishments(wg);
 		rng = new Random();
+		punishments = pi;
 	}
 	@EventHandler(priority=EventPriority.HIGH)
 	public void onPlayerChat(PlayerChatEvent event){
@@ -37,39 +37,54 @@ public class ExplosiveSwearingListener implements Listener {
 		String message = event.getMessage();
 		String[] messaga = message.split(" ");
 		String[] ma2 = new String[messaga.length];
-		boolean hasSworn = false;
-		List<String> swears = plugin.getConfig().getStringList("curses");
+		int timesSworn = 0;
+		int timesCaps = 0;
 		int j = 0;
 		for(String i : messaga){
-			String tmd = new String(i);
-			char lastchar = i.charAt(i.length()-1);
-			String t2 = "";
-
-			while(lastchar == '.' || lastchar == '!' || lastchar == '?' || lastchar == ','){
-				tmd = tmd.substring(0, tmd.length() - 1);
-				t2 = Character.toString(lastchar) + t2;
-				if(tmd.length() == 0){
-					break;
+			i = ChatColor.stripColor(i);
+			if(plugin.caps){
+				int wcaps = 0;
+				for(int k = 0; k < i.length(); k++){
+					if(Character.isUpperCase(i.charAt(k))){
+						wcaps++;
+					}
 				}
-				lastchar = tmd.charAt(tmd.length()-1);
-			}
-			tmd = removePunctuation(tmd);
-			if(swears.contains(tmd.toLowerCase())){
-				if(hasSworn == false && !(plugin.hasPerm(player, "explosiveswearing.exempt"))){
-					randomlyPunish(player);
-//					if(plugin.kill){
-//						player.setHealth(0);
-//					}
-					hasSworn = true;
+				if(wcaps >= 2 && !(plugin.hasPerm(player, "explosiveswearing.exempt"))){
+					timesCaps++;
 				}
-				ma2[j] = getCensored(tmd) + t2;
-			}else{
-				ma2[j] = i;
 			}
-			j++;
+			if(plugin.swearing){
+				String tmd = i;
+				if(i.length() <= 0){
+					continue;
+				}
+				char lastchar = i.charAt(i.length()-1);
+				String t2 = "";
+	
+				while(lastchar == '.' || lastchar == '!' || lastchar == '?' || lastchar == ','){
+					tmd = tmd.substring(0, tmd.length() - 1);
+					t2 = Character.toString(lastchar) + t2;
+					if(tmd.length() == 0){
+						break;
+					}
+					lastchar = tmd.charAt(tmd.length()-1);
+				}
+				tmd = removePunctuation(tmd);
+				if(plugin.curses.contains(tmd.toLowerCase())){
+					if(!(plugin.hasPerm(player, "explosiveswearing.exempt"))){
+						timesSworn++;
+					}
+					ma2[j] = getCensored(tmd) + t2;
+				}else{
+					ma2[j] = i;
+				}
+				j++;
+			}
 		}
-		
-		if(plugin.censor){
+		if((plugin.swearing && timesSworn > 0) || (plugin.caps && timesCaps > 1)){
+			randomlyPunish(player, timesSworn + timesCaps);
+		}
+		if(plugin.censor && plugin.swearing){
 			message = joinArray(" ", ma2);
 			event.setMessage(message);
 		}
@@ -118,12 +133,19 @@ public class ExplosiveSwearingListener implements Listener {
     	inp = inp.replaceAll("\\$", "s");
     	return inp;
     }
-    private void randomlyPunish(Player player){
+    private void randomlyPunish(Player player, int amount){
+    	player.sendMessage("Ouch!");
+    	if(!(plugin.broadcast == null) && !plugin.broadcast.equals("")){
+    		plugin.getServer().broadcastMessage(plugin.broadcast.replaceAll("\\[name\\]", Matcher.quoteReplacement(player.getName())));
+    	}
+    	if(!(plugin.PM == null) && !plugin.PM.equals("")){
+    		player.sendMessage(plugin.PM.replaceAll("\\[name\\]", Matcher.quoteReplacement(player.getName())));
+    	}
     	double random = rng.nextDouble();
     	double c = 0;
     	if(random < (c += plugin.chances.explode)){
 			if(plugin.explodable){
-				setCurser(player.getName(), "swore explosively");
+				setCurser(player.getName(), plugin.caps ? "used explosive caps" : "swore explosively");
 			}
 			punishments.goBoom(player, plugin.explodable);
     	}else if(random < (c += plugin.chances.lightning)){
@@ -150,6 +172,8 @@ public class ExplosiveSwearingListener implements Listener {
     		punishments.incinerate(player);
     	}else if(random < (c += plugin.chances.starve)){
     		punishments.starve(player);
+    	}else if(random < (c += plugin.chances.fine)){
+    		punishments.fine(player, amount * plugin.fine);
     	}
     }
 }

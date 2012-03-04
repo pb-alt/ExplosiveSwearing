@@ -1,6 +1,9 @@
 package org.dyndns.fishery.ExplosiveSwearing;
 import java.io.File;
+import java.util.List;
 import java.util.logging.Logger;
+
+import net.milkbowl.vault.economy.Economy;
 
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -9,18 +12,27 @@ import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
 
 public class ExplosiveSwearing extends JavaPlugin {
 	Logger log = Logger.getLogger("Minecraft");
 	private ExplosiveSwearingWorldGuard wg = new ExplosiveSwearingWorldGuard(this);
-	private final ExplosiveSwearingListener listener = new ExplosiveSwearingListener(this, wg);
 	public boolean explodable = true;
 	public boolean censor = false;
 	public boolean opPerms = false;
-	public boolean kill = true;
+	public boolean kill = false;
 	public Chances chances = new Chances();
+	public Economy economy = null;
+	private Punishments punishments;
+	private ExplosiveSwearingListener listener;
+	public double fine = 0;
+	List<String> curses;
+	boolean caps = false;
+	boolean swearing = true;
+	String PM = "";
+	String broadcast = "";
 
 	
 	public void onEnable(){
@@ -32,6 +44,11 @@ public class ExplosiveSwearing extends JavaPlugin {
 			this.getConfig().options().copyDefaults(true);
 			this.saveConfig();
 		}
+		if(!setupEconomy()){
+			log.info("[ExplosiveSwearing] No economy found. Fining will not work.");
+		}
+		punishments = new Punishments(economy, wg);
+		listener = new ExplosiveSwearingListener(this, punishments);
 		PluginManager pm = this.getServer().getPluginManager();
 		pm.registerEvents(listener, this);
 		opPerms = (pm.getPlugin("PermissionsBukkit") == null && pm.getPlugin("bPermissions") == null && pm.getPlugin("PermissionsEx") == null);
@@ -81,11 +98,29 @@ public class ExplosiveSwearing extends JavaPlugin {
 		return false;
 	}
 	
+	private boolean setupEconomy() {
+        if (getServer().getPluginManager().getPlugin("Vault") == null) {
+            return false;
+        }
+        RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
+        if (rsp == null) {
+            return false;
+        }
+        economy = rsp.getProvider();
+        return economy != null;
+    }
+	
 	private void loadCfgVars(){
 		FileConfiguration cfg = this.getConfig();
-		explodable = cfg.getBoolean("explode");
+		explodable = cfg.getBoolean("punishments.explode");
 		censor = cfg.getBoolean("censor");
-		kill = cfg.getBoolean("kill");
+		kill = cfg.getBoolean("punishments.kill");
+		fine = cfg.getDouble("punishments.fine");
+		swearing = cfg.getBoolean("watch.swearing");
+		curses = cfg.getStringList("curses");
+		caps = cfg.getBoolean("watch.caps");
+		broadcast = cfg.getString("extra.broadcast");
+		PM = cfg.getString("extra.PM");
 		double explode = cfg.getDouble("chances.explode");
 		double lightning = cfg.getDouble("chances.lightning");
 		double suffocate = cfg.getDouble("chances.suffocate");
@@ -93,7 +128,8 @@ public class ExplosiveSwearing extends JavaPlugin {
 		double sky = cfg.getDouble("chances.sky");
 		double incinerate = cfg.getDouble("chances.incinerate");
 		double starve = cfg.getDouble("chances.starve");
-		double total = explode + lightning + suffocate + voiddrop + sky+ incinerate + starve;
+		double fine = cfg.getDouble("chances.fine");
+		double total = explode + lightning + suffocate + voiddrop + sky+ incinerate + starve + fine;
 		chances.explode = explode / total;
 		chances.lightning = lightning / total;
 		chances.suffocate = suffocate / total;
@@ -101,9 +137,10 @@ public class ExplosiveSwearing extends JavaPlugin {
 		chances.sky = sky / total;
 		chances.incinerate = incinerate / total;
 		chances.starve = starve / total;
+		chances.fine = fine / total;
 	}
-	public boolean hasPerm(Player player, String perm){
-		return (opPerms && player.isOp()) || (player.isPermissionSet(perm) && player.hasPermission(perm));
+	public boolean hasPerm(CommandSender player, String perm){
+		return (player instanceof ConsoleCommandSender) ||(opPerms && player.isOp()) || (player.isPermissionSet(perm) && player.hasPermission(perm));
 	}
 }
 
@@ -115,6 +152,7 @@ class Chances{
 	public double sky = 0;
 	public double incinerate = 0;
 	public double starve = 0;
+	public double fine = 0;
 	public Chances(){
 		
 	}

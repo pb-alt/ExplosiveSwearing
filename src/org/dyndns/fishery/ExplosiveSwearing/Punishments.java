@@ -1,15 +1,20 @@
 package org.dyndns.fishery.ExplosiveSwearing;
 
+import net.milkbowl.vault.economy.Economy;
+
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
 public class Punishments {
 	public static ExplosiveSwearingWorldGuard wg;
-	public Punishments(ExplosiveSwearingWorldGuard wgi){
+	public static Economy economy;
+	public Punishments(Economy ei, ExplosiveSwearingWorldGuard wgi){
+		economy = ei;
 		wg = wgi;
 	}
 	public Punishments(){
 		wg = null;
+		economy = null;
 	}
 	public void goBoom(Player player, boolean blockDamage){
 		int explosionPower = 0;
@@ -54,5 +59,19 @@ public class Punishments {
 	public void starve(Player player){
 		player.setFoodLevel(0);
 		player.setSaturation(0);
+	}
+	public void fine(Player player, double amount){
+		if(economy == null){
+			player.setHealth(0);
+			return;
+		}
+		if(economy.getBalance(player.getName()) < amount){
+			player.setHealth(0);
+			return;
+		}else{
+			economy.withdrawPlayer(player.getName(), amount);
+			String cur = amount == 1 ? economy.currencyNameSingular() : economy.currencyNamePlural();
+			player.sendMessage("You were fined " + amount + " " + cur + " for swearing.");
+		}
 	}
 }

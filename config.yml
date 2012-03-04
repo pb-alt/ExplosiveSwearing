@@ -1,6 +1,11 @@
-explode: true
+watch:
+    swearing: true
+    caps: false
 censor: false
-kill: true
+punishments:
+    explode: true
+    kill: false
+    fine: 1.00
 chances:
     explode: 1
     lightning: 1
@@ -9,6 +14,10 @@ chances:
     sky: 1
     incinerate: 1
     starve: 1
+    fine: 0
+extra:
+    broadcast: #[name] can be used for player name
+    PM: #same
 curses:
  - anus
  - arse

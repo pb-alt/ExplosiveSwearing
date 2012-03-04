@@ -1,8 +1,9 @@
 name: ExplosiveSwearing
 main: org.dyndns.fishery.ExplosiveSwearing.ExplosiveSwearing
-version: 0.3
+version: 0.5
 description: This plugin blows up anyone who swears.
 author: pbfy0
+softdepend: [WorldGuard, Vault]
 commands:
     exswear:
         description: All commands for ExplosiveSwearing
