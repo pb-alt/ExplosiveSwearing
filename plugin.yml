@@ -1,6 +1,6 @@
 name: ExplosiveSwearing
-main: org.dyndns.fishery.ExplosiveSwearing.ExplosiveSwearing
-version: 0.5
+main: tk.pbfy0.explosiveswearing.ExplosiveSwearing
+version: 0.8
 description: This plugin blows up anyone who swears.
 author: pbfy0
 softdepend: [WorldGuard, Vault]
@@ -18,7 +18,7 @@ permissions:
             explosiveswearing.exempt: true
     explosiveswearing.reload:
         description: Reload ExplosiveSwearing
-        default: false
+        default: op
     explosiveswearing.exempt:
-        description: Be exempted from exploding from swearing
+        description: Be allowed to swear
         default: false

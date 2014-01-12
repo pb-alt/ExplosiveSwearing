@@ -1,4 +1,4 @@
-package org.dyndns.fishery.ExplosiveSwearing;
+package tk.pbfy0.explosiveswearing;
 import java.io.File;
 import java.util.List;
 import java.util.logging.Logger;
@@ -41,16 +41,16 @@ public class ExplosiveSwearing extends JavaPlugin {
 			this.getDataFolder().mkdirs();
 		}
 		if(!(new File(this.getDataFolder(), "config.yml").exists())){
-			this.getConfig().options().copyDefaults(true);
-			this.saveConfig();
+			this.saveDefaultConfig();
 		}
 		if(!setupEconomy()){
 			log.info("[ExplosiveSwearing] No economy found. Fining will not work.");
 		}
-		punishments = new Punishments(economy, wg);
+		punishments = new Punishments(this, economy, wg);
 		listener = new ExplosiveSwearingListener(this, punishments);
 		PluginManager pm = this.getServer().getPluginManager();
 		pm.registerEvents(listener, this);
+		pm.registerEvents(punishments, this);
 		opPerms = (pm.getPlugin("PermissionsBukkit") == null && pm.getPlugin("bPermissions") == null && pm.getPlugin("PermissionsEx") == null);
 		if(opPerms){
 			log.info("[ExplosiveSwearing] No permissions detected. Defaulting to op");
@@ -74,7 +74,7 @@ public class ExplosiveSwearing extends JavaPlugin {
 				if(sender instanceof Player){
 					sendp = (Player) sender;
 				}
-				if(!(sender instanceof ConsoleCommandSender || hasPerm(sendp, "explosiveswearing.reload"))){
+				if(!hasPerm(sendp, "explosiveswearing.reload")){
 					sendp.sendMessage(ChatColor.RED + "You do not have permission to reload this plugin");
 					return true;
 				}
@@ -140,7 +140,7 @@ public class ExplosiveSwearing extends JavaPlugin {
 		chances.fine = fine / total;
 	}
 	public boolean hasPerm(CommandSender player, String perm){
-		return (player instanceof ConsoleCommandSender) ||(opPerms && player.isOp()) || (player.isPermissionSet(perm) && player.hasPermission(perm));
+		return (player instanceof ConsoleCommandSender) || (player.hasPermission(perm));
 	}
 }
 

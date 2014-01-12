@@ -1,4 +1,4 @@
-package org.dyndns.fishery.ExplosiveSwearing;
+package tk.pbfy0.explosiveswearing;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Player;

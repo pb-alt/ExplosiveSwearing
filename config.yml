@@ -16,8 +16,8 @@ chances:
     starve: 1
     fine: 0
 extra:
-    broadcast: #[name] can be used for player name
-    PM: #same
+    broadcast: "" # [name]  will be replaced with the player's username
+    PM: "" # same
 curses:
  - anus
  - arse
